@@ -78,5 +78,7 @@ public class MailServer {
         }
         return emails;
     }
-
+    public static void main(String[] args) {
+        new MailServer();
+    }
 }
