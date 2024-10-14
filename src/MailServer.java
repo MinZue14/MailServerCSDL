@@ -67,7 +67,7 @@ public class MailServer {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String sender = rs.getString("sender_username");
-                String receive = rs.getString("receive_username");
+                String receive = rs.getString("receiver_username");
                 String subject = rs.getString("subject");
                 String content = rs.getString("content");
                 Timestamp sentTime = rs.getTimestamp("sent_time");

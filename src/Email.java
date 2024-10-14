@@ -67,4 +67,9 @@ public class Email {
     public void setSentTime(Timestamp sentTime) {
         this.sentTime = sentTime;
     }
+    @Override
+    public String toString() {
+        return subject; // Hiển thị subject của email trong JList
+    }
+
 }

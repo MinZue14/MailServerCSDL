@@ -1,11 +1,12 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+
 public class MailClient {
     private static final int SERVER_PORT = 9876;
     private MailServer mailServer;
     private String currentUsername = null;
-    private DefaultListModel<String> inboxListModel;
+    private DefaultListModel<Email> inboxListModel;
     private JTextArea emailContentTextArea;
 
     public MailClient() {
@@ -86,7 +87,6 @@ public class MailClient {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
-        // Thêm JLabel để hiển thị tên người dùng
         JLabel userLabel = new JLabel("User: " + currentUsername);
         userLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         frame.add(userLabel, BorderLayout.NORTH); // Đặt JLabel ở trên cùng bên phải
@@ -98,16 +98,14 @@ public class MailClient {
         inboxPanel.add(inboxLabel, BorderLayout.NORTH);
 
         inboxListModel = new DefaultListModel<>();
-        JList<String> inboxList = new JList<>(inboxListModel);
+        JList<Email> inboxList = new JList<>(inboxListModel);
         inboxPanel.add(new JScrollPane(inboxList), BorderLayout.CENTER);
 
-        // Nút Reload để tải lại inbox
         JButton reloadButton = new JButton("Reload Inbox");
         inboxPanel.add(reloadButton, BorderLayout.SOUTH);
 
         frame.add(inboxPanel, BorderLayout.WEST);
 
-        // Hiển thị nội dung email
         emailContentTextArea = new JTextArea();
         emailContentTextArea.setEditable(false);
         frame.add(new JScrollPane(emailContentTextArea), BorderLayout.CENTER);
@@ -121,114 +119,125 @@ public class MailClient {
             }
         });
 
+        // Xử lý khi nhấp vào email để hiển thị chi tiết
+        inboxList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                Email selectedEmail = inboxList.getSelectedValue();
+                if (selectedEmail != null) {
+                    displayEmailDetails(selectedEmail); // Hiển thị chi tiết email
+                }
+            }
+        });
+
         // Nút để gửi email
         JButton sendEmailButton = new JButton("Send Email");
         inboxPanel.add(sendEmailButton, BorderLayout.NORTH);
 
         sendEmailButton.addActionListener(e -> {
-            // Giao diện gửi email
-            JFrame sendEmailFrame = new JFrame("Send Email");
-            sendEmailFrame.setSize(500, 400);
-            sendEmailFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            sendEmailFrame.setLayout(new BorderLayout());
-
-            // Tiêu đề
-            JPanel headerPanel = new JPanel();
-            headerPanel.setLayout(new BorderLayout());
-            JLabel titleLabel = new JLabel("EMAIL", JLabel.CENTER);
-            titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-            headerPanel.add(titleLabel, BorderLayout.CENTER);
-            sendEmailFrame.add(headerPanel, BorderLayout.NORTH);
-
-            // Nội dung gửi email
-            JPanel contentPanel = new JPanel();
-            contentPanel.setLayout(new GridBagLayout());
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(10, 10, 10, 10);
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-
-            // From Label and TextField
-            JLabel fromLabel = new JLabel("From: " + currentUsername); // Hiển thị người gửi
-            gbc.gridx = 0;
-            gbc.gridy = 0;
-            gbc.gridwidth = 2; // Chiếm toàn bộ chiều rộng
-            contentPanel.add(fromLabel, gbc);
-
-            // Recipient Label and TextField
-            JLabel recipientLabel = new JLabel("To:");
-            gbc.gridx = 0;
-            gbc.gridy = 1;
-            gbc.gridwidth = 1; // Đặt lại chiều rộng cho các trường tiếp theo
-            contentPanel.add(recipientLabel, gbc);
-
-            JTextField recipientText = new JTextField(30);
-            gbc.gridx = 1;
-            contentPanel.add(recipientText, gbc);
-
-            // Subject Label and TextField
-            JLabel subjectLabel = new JLabel("Subject:");
-            gbc.gridx = 0;
-            gbc.gridy = 2;
-            contentPanel.add(subjectLabel, gbc);
-
-            JTextField subjectText = new JTextField(30);
-            gbc.gridx = 1;
-            contentPanel.add(subjectText, gbc);
-
-            // Content Label and TextArea
-            JLabel contentLabel = new JLabel("Content:");
-            gbc.gridx = 0;
-            gbc.gridy = 3;
-            contentPanel.add(contentLabel, gbc);
-
-            JTextArea contentText = new JTextArea(8, 30);
-            contentText.setLineWrap(true);
-            contentText.setWrapStyleWord(true);
-            gbc.gridx = 1;
-            gbc.gridy = 3;
-            gbc.gridwidth = 2;
-            contentPanel.add(new JScrollPane(contentText), gbc);
-
-            sendEmailFrame.add(contentPanel, BorderLayout.CENTER);
-
-            // Nút Gửi email
-            JButton sendButton = new JButton("Send");
-            sendEmailFrame.add(sendButton, BorderLayout.SOUTH);
-
-            sendButton.addActionListener(ev -> {
-                String recipient = recipientText.getText();
-                String subject = subjectText.getText();
-                String content = contentText.getText();
-                if (!recipient.isEmpty() && !subject.isEmpty() && !content.isEmpty()) {
-                    // Gửi email qua Datagram socket
-                    sendEmail(currentUsername, recipient, subject, content);
-                    sendEmailFrame.dispose();
-                    JOptionPane.showMessageDialog(frame, "Email sent successfully!");
-                } else {
-                    JOptionPane.showMessageDialog(sendEmailFrame, "Please fill out all fields.");
-                }
-            });
-
-            sendEmailFrame.setVisible(true);
+            // Mở cửa sổ gửi email
+            openSendEmailFrame();
         });
 
         frame.setVisible(true);
     }
 
-    // Tải lại hộp thư đến
     private void reloadInbox() {
         inboxListModel.clear();
         List<Email> emails = mailServer.getReceivedEmails(currentUsername);
         for (Email email : emails) {
-            inboxListModel.addElement(email.getSubject());
+            inboxListModel.addElement(email); // Hiển thị subject qua toString()
         }
         emailContentTextArea.setText(""); // Xóa nội dung email khi tải lại
+    }
+
+    // Hiển thị chi tiết email
+    private void displayEmailDetails(Email email) {
+        StringBuilder details = new StringBuilder();
+        details.append("From: ").append(email.getSender_username()).append("\n");
+        details.append("To: ").append(email.getReceive_username()).append("\n");
+        details.append("Subject: ").append(email.getSubject()).append("\n");
+        details.append("Date: ").append(email.getSentTime()).append("\n\n");
+        details.append("Content:\n").append(email.getContent());
+
+        emailContentTextArea.setText(details.toString()); // Hiển thị chi tiết email
     }
 
     // Gửi email
     private void sendEmail(String sender, String recipient, String subject, String content) {
         mailServer.sendEmail(sender, recipient, subject, content);
         System.out.println("Email đã được gửi!");
+    }
+
+    private void openSendEmailFrame() {
+        JFrame sendEmailFrame = new JFrame("Send Email");
+        sendEmailFrame.setSize(500, 400);
+        sendEmailFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        sendEmailFrame.setLayout(new BorderLayout());
+
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel fromLabel = new JLabel("From: " + currentUsername);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        contentPanel.add(fromLabel, gbc);
+
+        // Recipient Label and TextField
+        JLabel recipientLabel = new JLabel("To:");
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        contentPanel.add(recipientLabel, gbc);
+
+        JTextField recipientText = new JTextField(30);
+        gbc.gridx = 1;
+        contentPanel.add(recipientText, gbc);
+
+        // Subject Label and TextField
+        JLabel subjectLabel = new JLabel("Subject:");
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        contentPanel.add(subjectLabel, gbc);
+
+        JTextField subjectText = new JTextField(30);
+        gbc.gridx = 1;
+        contentPanel.add(subjectText, gbc);
+
+        // Content Label and TextArea
+        JLabel contentLabel = new JLabel("Content:");
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        contentPanel.add(contentLabel, gbc);
+
+        JTextArea contentText = new JTextArea(8, 30);
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        gbc.gridwidth = 2;
+        contentPanel.add(new JScrollPane(contentText), gbc);
+
+        sendEmailFrame.add(contentPanel, BorderLayout.CENTER);
+
+        // Nút Gửi email
+        JButton sendButton = new JButton("Send");
+        sendEmailFrame.add(sendButton, BorderLayout.SOUTH);
+
+        sendButton.addActionListener(ev -> {
+            String recipient = recipientText.getText();
+            String subject = subjectText.getText();
+            String content = contentText.getText();
+            if (!recipient.isEmpty() && !subject.isEmpty() && !content.isEmpty()) {
+                sendEmail(currentUsername, recipient, subject, content);
+                sendEmailFrame.dispose();
+            } else {
+                JOptionPane.showMessageDialog(sendEmailFrame, "Please fill all fields.");
+            }
+        });
+
+        sendEmailFrame.setVisible(true);
     }
 
     public static void main(String[] args) {
