@@ -2,20 +2,23 @@ import java.sql.Timestamp;
 
 public class Email {
     private int id;
-    private String sender;
+    private String sender_username;
+    private String receive_username;
     private String subject;
     private String content;
     private Timestamp sentTime;
 
-    public Email(int id, String sender, String subject, String content, Timestamp sentTime) {
+    public Email() {
+    }
+
+    public Email(int id, String sender_username, String receive_username, String subject, String content, Timestamp sentTime) {
         this.id = id;
-        this.sender = sender;
+        this.sender_username = sender_username;
+        this.receive_username = receive_username;
         this.subject = subject;
         this.content = content;
         this.sentTime = sentTime;
     }
-
-    // Getter và Setter cho các thuộc tính
 
     public int getId() {
         return id;
@@ -25,12 +28,20 @@ public class Email {
         this.id = id;
     }
 
-    public String getSender() {
-        return sender;
+    public String getSender_username() {
+        return sender_username;
     }
 
-    public void setSender(String sender) {
-        this.sender = sender;
+    public void setSender_username(String sender_username) {
+        this.sender_username = sender_username;
+    }
+
+    public String getReceive_username() {
+        return receive_username;
+    }
+
+    public void setReceive_username(String receive_username) {
+        this.receive_username = receive_username;
     }
 
     public String getSubject() {
@@ -56,15 +67,4 @@ public class Email {
     public void setSentTime(Timestamp sentTime) {
         this.sentTime = sentTime;
     }
-
-//    @Override
-//    public String toString() {
-//        return "Email{" +
-//                "id=" + id +
-//                ", sender='" + sender + '\'' +
-//                ", subject='" + subject + '\'' +
-//                ", content='" + content + '\'' +
-//                ", sentTime=" + sentTime +
-//                '}';
-//    }
 }

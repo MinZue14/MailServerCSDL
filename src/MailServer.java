@@ -67,11 +67,12 @@ public class MailServer {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String sender = rs.getString("sender_username");
+                String receive = rs.getString("receive_username");
                 String subject = rs.getString("subject");
                 String content = rs.getString("content");
                 Timestamp sentTime = rs.getTimestamp("sent_time");
 
-                emails.add(new Email(id, sender, subject, content, sentTime));
+                emails.add(new Email(id, sender, receive, subject, content, sentTime));
             }
         } catch (SQLException e) {
             e.printStackTrace();
